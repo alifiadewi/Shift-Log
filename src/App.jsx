@@ -2,23 +2,24 @@ import React, { useState, useRef } from "react";
 import { Camera, Mic, Square, RotateCcw, CheckCircle2, Info } from "lucide-react";
 
 const CATEGORIES = [
-  { key: "workDone", label: "Work done this shift", placeholder: "What did you do or change?" },
-  { key: "problem", label: "Problem encountered", placeholder: "What went wrong? (photo above is your proof)" },
-  { key: "solution", label: "Fix applied", placeholder: "How did you fix it, if you did?" },
-  { key: "followUp", label: "Follow-up for next shift", placeholder: "What should the next shift watch or continue?" },
+  { key: "workDone", label: "Pekerjaan yang telah dilakukan", placeholder: "Apa yang Anda kerjakan?" },
+  { key: "problem", label: "Temuan masalah", placeholder: "Jelaskan permasalahannya? (foto di atas merupakan bukti masalah)" },
+  { key: "solution", label: "Perbaikan yang dilakukan", placeholder: "Apa yang telah dilakukan untuk meemperbaikinya?" },
+  { key: "followUp", label: "Catatan untuk shift berikutnya", placeholder: "Apa yang harus diperhatikan oleh shift berikutnya?" },
 ];
 
-const SHIFTS = ["Morning", "Afternoon", "Night"];
+const SHIFTS = ["Pagi", "Siang", "Malam"];
 
-// Same-origin route. In production (Cloudflare Pages) this resolves to
-// functions/api/cleanup.js, which holds the Anthropic API key server-side.
-// Until that function + secret are set up, this call will just fail quietly
-// (caught below) and the button will effectively do nothing — it won't crash the app.
+// PENDING
+// Mic input sends raw audio to Google/Apple's speech service; AI cleanup sends text to Anthropic
+const VOICE_INPUT_ENABLED = false;
+const AI_CLEANUP_ENABLED = false;
+
 const CLEANUP_ENDPOINT = "/api/cleanup";
 
 export default function ShiftReportForm() {
   const [name, setName] = useState("");
-  const [shift, setShift] = useState("Morning");
+  const [shift, setShift] = useState("Pagi");
   const [photo, setPhoto] = useState(null);
   const [fields, setFields] = useState({ workDone: "", problem: "", solution: "", followUp: "" });
   const [recordingKey, setRecordingKey] = useState(null);
@@ -31,6 +32,7 @@ export default function ShiftReportForm() {
   const fileInputRef = useRef(null);
 
   const speechSupported =
+    VOICE_INPUT_ENABLED &&
     typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
   function handlePhotoChange(e) {
@@ -166,10 +168,10 @@ export default function ShiftReportForm() {
         <h1 className="text-lg font-semibold mb-1">Shift Report</h1>
         <p className="text-xs text-zinc-500 mb-4">Fill each section by typing or holding the mic. Edit anything before submitting.</p>
 
-        {!speechSupported && (
+        {!VOICE_INPUT_ENABLED && (
           <div className="flex items-start gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-3 mb-4 text-xs text-zinc-400">
             <Info size={14} className="mt-0.5 shrink-0" />
-            <span>Voice input isn't supported in this browser — typing still works for every field.</span>
+            <span>Voice input is temporarily off, please type instead.</span>
           </div>
         )}
 
@@ -258,25 +260,24 @@ export default function ShiftReportForm() {
           ))}
         </div>
 
-        <div className="flex gap-2 mb-1">
-          <button
-            onClick={cleanUpWithAI}
-            disabled={isCleaning || !Object.values(fields).some((v) => v.trim())}
-            className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-100 text-sm font-medium rounded-lg py-2.5"
-          >
-            {isCleaning ? "Cleaning up..." : "Clean up with AI"}
-          </button>
-          {rawFields && (
-            <button
-              onClick={undoCleanup}
-              className="bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm px-4 rounded-lg"
-            >
-              Undo
-            </button>
-          )}
-        </div>
-        {cleanupError && (
-          <p className="text-xs text-amber-500 mb-2">{cleanupError}</p>
+        {AI_CLEANUP_ENABLED && (
+          <>
+            <div className="flex gap-2 mb-1">
+              <button
+                onClick={cleanUpWithAI}
+                disabled={isCleaning || !Object.values(fields).some((v) => v.trim())}
+                className="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-100 text-sm font-medium rounded-lg py-2.5"
+              >
+                {isCleaning ? "Memproses..." : "Clean up"}
+              </button>
+              {rawFields && (
+                <button onClick={undoCleanup} className="bg-zinc-900 border border-zinc-800 text-zinc-400 text-sm px-4 rounded-lg">
+                  Undo
+                </button>
+              )}
+            </div>
+            {cleanupError && <p className="text-xs text-amber-500 mb-2">{cleanupError}</p>}
+          </>
         )}
 
         <button
