@@ -79,6 +79,36 @@ export default function ShiftReportForm() {
     setRecordingKey(key);
   }
 
+  function renderCategoryCard(c) {
+    return (
+      <div key={c.key} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-xs font-medium text-slate-700">{c.label}</label>
+          {speechSupported && (
+            <button
+              onClick={() => toggleRecording(c.key)}
+              className={
+                recordingKey === c.key
+                  ? "flex items-center gap-1 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse"
+                  : "flex items-center gap-1 bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full hover:bg-slate-200"
+              }
+            >
+              {recordingKey === c.key ? <Square size={12} /> : <Mic size={12} />}
+              {recordingKey === c.key ? "Stop" : "Record"}
+            </button>
+          )}
+        </div>
+        <textarea
+          value={fields[c.key]}
+          onChange={(e) => updateField(c.key, e.target.value)}
+          placeholder={c.placeholder}
+          rows={2}
+          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-sm outline-none focus:border-blue-500 resize-none"
+        />
+      </div>
+    );
+  }
+
   async function cleanUpWithAI() {
     const hasContent = Object.values(fields).some((v) => v.trim());
     if (!hasContent || isCleaning) return;
@@ -205,6 +235,10 @@ export default function ShiftReportForm() {
           </div>
         </div>
 
+                <div className="space-y-3 mb-4">
+          {CATEGORIES.slice(0, 2).map(renderCategoryCard)}
+        </div>
+
         <div className="mb-4">
           <label className="text-xs text-slate-500 mb-1 block">Photo proof</label>
           <input
@@ -237,33 +271,7 @@ export default function ShiftReportForm() {
         </div>
 
         <div className="space-y-3 mb-6">
-          {CATEGORIES.map((c) => (
-            <div key={c.key} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-slate-700">{c.label}</label>
-                {speechSupported && (
-                  <button
-                    onClick={() => toggleRecording(c.key)}
-                    className={
-                      recordingKey === c.key
-                        ? "flex items-center gap-1 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse"
-                        : "flex items-center gap-1 bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full hover:bg-slate-200"
-                    }
-                  >
-                    {recordingKey === c.key ? <Square size={12} /> : <Mic size={12} />}
-                    {recordingKey === c.key ? "Stop" : "Record"}
-                  </button>
-                )}
-              </div>
-              <textarea
-                value={fields[c.key]}
-                onChange={(e) => updateField(c.key, e.target.value)}
-                placeholder={c.placeholder}
-                rows={2}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-sm outline-none focus:border-blue-500 resize-none"
-              />
-            </div>
-          ))}
+          {CATEGORIES.slice(2).map(renderCategoryCard)}
         </div>
 
         {AI_CLEANUP_ENABLED && (
