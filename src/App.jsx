@@ -171,19 +171,19 @@ export default function ShiftReportForm() {
         {!VOICE_INPUT_ENABLED && (
           <div className="flex items-start gap-2 bg-white border border-slate-200 rounded-xl p-3 mb-4 text-xs text-slate-500 shadow-sm">
             <Info size={14} className="mt-0.5 shrink-0" />
-            <span>Voice input is temporarily off pending IT review — please type instead.</span>
+            <span>Voice input is temporarily off, please type instead.</span>
           </div>
         )}
         {VOICE_INPUT_ENABLED && !speechSupported && (
           <div className="flex items-start gap-2 bg-white border border-slate-200 rounded-xl p-3 mb-4 text-xs text-slate-500 shadow-sm">
             <Info size={14} className="mt-0.5 shrink-0" />
-            <span>Voice input isn't supported in this browser — typing still works for every field.</span>
+            <span>Voice input isn't supported in this browser.</span>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Your name</label>
+            <label className="text-xs text-slate-500 mb-1 block">Nama</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
