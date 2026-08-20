@@ -1,7 +1,4 @@
 {
-  // If Cloudflare already created a Worker for you (check the dashboard —
-  // it was called "shift-log" in your build log), set "name" to match it
-  // so this deploys to that same project instead of creating a new one.
   "name": "shift-log",
   "compatibility_date": "2026-08-20",
   "main": "worker/index.js",
