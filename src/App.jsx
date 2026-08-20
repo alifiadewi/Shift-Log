@@ -1,17 +1,16 @@
 import React, { useState, useRef } from "react";
 import { Camera, Mic, Square, RotateCcw, CheckCircle2, Info } from "lucide-react";
 
-const CATEGORIES = [
-  { key: "workDone", label: "Work done this shift", placeholder: "What did you do or change?" },
-  { key: "problem", label: "Problem encountered", placeholder: "What went wrong? (photo above is your proof)" },
-  { key: "solution", label: "Fix applied", placeholder: "How did you fix it, if you did?" },
-  { key: "followUp", label: "Follow-up for next shift", placeholder: "What should the next shift watch or continue?" },
-];
-
 const SHIFTS = ["Morning", "Afternoon", "Night"];
 
+const FIX_STATUS_OPTIONS = [
+  { id: "not_fixed", label: "Not fixed" },
+  { id: "maintenance", label: "Under maintenance" },
+  { id: "fixed", label: "Fixed" },
+];
+
 // PENDING
-// Mic input sends raw audio to Google/Apple's speech service; AI cleanup sends text to Anthropic
+// Mic input sends raw audio to Google/Apple's speech service; AI cleanup sends text to Anthropic.
 const VOICE_INPUT_ENABLED = false;
 const AI_CLEANUP_ENABLED = false;
 
@@ -20,8 +19,10 @@ const CLEANUP_ENDPOINT = "/api/cleanup";
 export default function ShiftReportForm() {
   const [name, setName] = useState("");
   const [shift, setShift] = useState("Morning");
-  const [photo, setPhoto] = useState(null);
   const [fields, setFields] = useState({ workDone: "", problem: "", solution: "", followUp: "" });
+  const [hasProblem, setHasProblem] = useState(null); // null | true | false
+  const [fixStatus, setFixStatus] = useState(null); // null | "not_fixed" | "maintenance" | "fixed"
+  const [photo, setPhoto] = useState(null);
   const [recordingKey, setRecordingKey] = useState(null);
   const [submitted, setSubmitted] = useState(null);
   const [rawFields, setRawFields] = useState(null);
@@ -79,36 +80,6 @@ export default function ShiftReportForm() {
     setRecordingKey(key);
   }
 
-  function renderCategoryCard(c) {
-    return (
-      <div key={c.key} className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs font-medium text-slate-700">{c.label}</label>
-          {speechSupported && (
-            <button
-              onClick={() => toggleRecording(c.key)}
-              className={
-                recordingKey === c.key
-                  ? "flex items-center gap-1 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse"
-                  : "flex items-center gap-1 bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-full hover:bg-slate-200"
-              }
-            >
-              {recordingKey === c.key ? <Square size={12} /> : <Mic size={12} />}
-              {recordingKey === c.key ? "Stop" : "Record"}
-            </button>
-          )}
-        </div>
-        <textarea
-          value={fields[c.key]}
-          onChange={(e) => updateField(c.key, e.target.value)}
-          placeholder={c.placeholder}
-          rows={2}
-          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-sm outline-none focus:border-blue-500 resize-none"
-        />
-      </div>
-    );
-  }
-
   async function cleanUpWithAI() {
     const hasContent = Object.values(fields).some((v) => v.trim());
     if (!hasContent || isCleaning) return;
@@ -126,7 +97,7 @@ export default function ShiftReportForm() {
       setFields((f) => ({ ...f, ...cleaned }));
     } catch (err) {
       console.error("Cleanup failed:", err);
-      setCleanupError("Couldn't Summarize");
+      setCleanupError("Couldn't clean up right now — your original text is still here.");
     } finally {
       setIsCleaning(false);
     }
@@ -139,11 +110,33 @@ export default function ShiftReportForm() {
     }
   }
 
-  const canSubmit = name.trim() && photo && Object.values(fields).some((v) => v.trim());
+  function handleSetHasProblem(value) {
+    setHasProblem(value);
+    if (!value) {
+      setFixStatus(null);
+      setPhoto(null);
+      setFields((f) => ({ ...f, problem: "", solution: "" }));
+    }
+  }
+
+  const problemStepOk =
+    hasProblem === false ||
+    (hasProblem === true &&
+      fields.problem.trim() &&
+      !!photo &&
+      fixStatus !== null &&
+      (fixStatus !== "fixed" || fields.solution.trim()));
+
+  const canSubmit =
+    name.trim() &&
+    fields.workDone.trim() &&
+    hasProblem !== null &&
+    problemStepOk &&
+    fields.followUp.trim();
 
   function handleSubmit() {
     if (!canSubmit) return;
-    setSubmitted({ name, shift, photo, fields, submittedAt: new Date().toISOString() });
+    setSubmitted({ name, shift, photo, fields, hasProblem, fixStatus, submittedAt: new Date().toISOString() });
   }
 
   function handleNewReport() {
@@ -151,39 +144,138 @@ export default function ShiftReportForm() {
     setName("");
     setPhoto(null);
     setFields({ workDone: "", problem: "", solution: "", followUp: "" });
+    setHasProblem(null);
+    setFixStatus(null);
     setCleanupError(null);
     setRawFields(null);
   }
 
+  function renderField(key, label, placeholder) {
+    return (
+      <div className="mb-5">
+        <label className="text-xs font-medium text-slate-700 mb-1.5 block">{label}</label>
+        <div className="relative">
+          <textarea
+            value={fields[key]}
+            onChange={(e) => updateField(key, e.target.value)}
+            placeholder={placeholder}
+            rows={2}
+            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 pr-11 text-sm outline-none focus:border-blue-500 resize-none"
+          />
+          {speechSupported && (
+            <button
+              type="button"
+              onClick={() => toggleRecording(key)}
+              className={
+                recordingKey === key
+                  ? "absolute top-2 right-2 flex items-center justify-center w-7 h-7 rounded-full bg-red-500 text-white animate-pulse"
+                  : "absolute top-2 right-2 flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }
+            >
+              {recordingKey === key ? <Square size={13} /> : <Mic size={13} />}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Yes/No pair for "was there a problem"
+  function renderYesNo(selected, onSelect) {
+    return (
+      <div className="flex gap-2 mt-1.5">
+        <button
+          type="button"
+          onClick={() => onSelect(true)}
+          className={
+            selected === true
+              ? "flex-1 border-2 border-blue-600 bg-blue-50 text-blue-700 text-sm font-medium rounded-xl py-2"
+              : "flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-xl py-2 hover:border-slate-400"
+          }
+        >
+          Yes
+        </button>
+        <button
+          type="button"
+          onClick={() => onSelect(false)}
+          className={
+            selected === false
+              ? "flex-1 border-2 border-blue-600 bg-blue-50 text-blue-700 text-sm font-medium rounded-xl py-2"
+              : "flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-xl py-2 hover:border-slate-400"
+          }
+        >
+          No
+        </button>
+      </div>
+    );
+  }
+
+  function renderRadioOption(id, label, selected, onSelect) {
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => onSelect(id)}
+        className={
+          selected
+            ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-xl px-4 py-3 text-left bg-white"
+            : "w-full flex items-center gap-3 border border-slate-300 rounded-xl px-4 py-3 text-left bg-white hover:border-slate-400"
+        }
+      >
+        <span
+          className={
+            selected
+              ? "flex items-center justify-center w-5 h-5 rounded-full border-2 border-blue-600 shrink-0"
+              : "flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-300 shrink-0"
+          }
+        >
+          {selected && <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />}
+        </span>
+        <span className={selected ? "text-sm font-medium text-slate-900" : "text-sm text-slate-600"}>
+          {label}
+        </span>
+      </button>
+    );
+  }
+
   if (submitted) {
+    const statusLabel = FIX_STATUS_OPTIONS.find((o) => o.id === submitted.fixStatus)?.label;
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="w-full max-w-md bg-white border border-slate-300 rounded-2xl p-6">
           <div className="flex items-center gap-2 text-emerald-600 mb-4">
             <CheckCircle2 size={22} />
             <span className="font-medium">Report ready</span>
           </div>
           <p className="text-sm text-slate-500 mb-4">
-            There's no server yet, so nothing was actually sent. This is exactly what would go to the
-            backend once it exists.
+            There's no server yet.
           </p>
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 space-y-2 max-h-72 overflow-auto">
+          <div className="bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-700 space-y-2 max-h-72 overflow-auto">
             <div><span className="text-slate-500">Name:</span> {submitted.name}</div>
             <div><span className="text-slate-500">Shift:</span> {submitted.shift}</div>
             <div><span className="text-slate-500">Time:</span> {submitted.submittedAt}</div>
-            {CATEGORIES.map((c) => (
-              <div key={c.key}>
-                <span className="text-slate-500">{c.label}:</span>{" "}
-                {submitted.fields[c.key] || <em className="text-slate-400">empty</em>}
-              </div>
-            ))}
+            <div><span className="text-slate-500">Work done:</span> {submitted.fields.workDone}</div>
+            <div>
+              <span className="text-slate-500">Problem:</span>{" "}
+              {submitted.hasProblem ? submitted.fields.problem : <em className="text-slate-400">None reported</em>}
+            </div>
+            {submitted.hasProblem && (
+              <>
+                <div>
+                  <span className="text-slate-500">Fix applied:</span>{" "}
+                  {submitted.fields.solution || <em className="text-slate-400">None entered</em>}
+                </div>
+                <div><span className="text-slate-500">Status:</span> {statusLabel}</div>
+              </>
+            )}
+            <div><span className="text-slate-500">Follow-up:</span> {submitted.fields.followUp}</div>
           </div>
           {submitted.photo && (
-            <img src={submitted.photo} alt="Report proof" className="w-full rounded-xl mt-3 border border-slate-200" />
+            <img src={submitted.photo} alt="Report proof" className="w-full rounded-xl mt-3 border border-slate-300" />
           )}
           <button
             onClick={handleNewReport}
-            className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl py-2.5 shadow-sm"
+            className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl py-2.5"
           >
             Start a new report
           </button>
@@ -196,29 +288,30 @@ export default function ShiftReportForm() {
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4">
       <div className="max-w-md mx-auto">
         <h1 className="text-lg font-semibold mb-1">Shift Report</h1>
-        <p className="text-xs text-slate-500 mb-4">Fill each section by typing or holding the mic. Edit anything before submitting.</p>
+        <p className="text-xs text-slate-500 mb-4">Answer each step. You can edit before submitting.</p>
 
         {!VOICE_INPUT_ENABLED && (
-          <div className="flex items-start gap-2 bg-white border border-slate-200 rounded-xl p-3 mb-4 text-xs text-slate-500 shadow-sm">
+          <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-xl p-3 mb-4 text-xs text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>Voice input is temporarily off, please type instead.</span>
           </div>
         )}
         {VOICE_INPUT_ENABLED && !speechSupported && (
-          <div className="flex items-start gap-2 bg-white border border-slate-200 rounded-xl p-3 mb-4 text-xs text-slate-500 shadow-sm">
+          <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-xl p-3 mb-4 text-xs text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
-            <span>Voice input isn't supported in this browser.</span>
+            <span>Voice input isn't supported in this browser — typing still works for every field.</span>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        {/* Name + Shift */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Nama</label>
+            <label className="text-xs text-slate-500 mb-1 block">Your name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Ahmad Fauzi"
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 shadow-sm"
+              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
             />
           </div>
           <div>
@@ -226,7 +319,7 @@ export default function ShiftReportForm() {
             <select
               value={shift}
               onChange={(e) => setShift(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 shadow-sm"
+              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
             >
               {SHIFTS.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -235,44 +328,66 @@ export default function ShiftReportForm() {
           </div>
         </div>
 
-                <div className="space-y-3 mb-4">
-          {CATEGORIES.slice(0, 2).map(renderCategoryCard)}
+        {/* Step 1: what did you do */}
+        {renderField("workDone", "What did you do this shift?", "What did you do or change?")}
+
+        {/* Step 2: was there a problem */}
+        <div className="mb-5">
+          <label className="text-xs font-medium text-slate-700 block">Was there a problem?</label>
+          {renderYesNo(hasProblem, handleSetHasProblem)}
         </div>
 
-        <div className="mb-4">
-          <label className="text-xs text-slate-500 mb-1 block">Photo proof</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handlePhotoChange}
-            className="hidden"
-          />
-          {photo ? (
-            <div className="relative">
-              <img src={photo} alt="Captured proof" className="w-full rounded-xl border border-slate-200" />
-              <button
-                onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                className="absolute bottom-2 right-2 bg-zinc-950/80 border border-zinc-700 rounded-full p-2 text-white"
-              >
-                <RotateCcw size={16} />
-              </button>
+        {hasProblem === true && (
+          <>
+            {renderField("problem", "Describe the problem", "What went wrong?")}
+
+            <div className="mb-5">
+              <label className="text-xs text-slate-500 mb-1 block">Photo evidence</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+              {photo ? (
+                <div className="relative">
+                  <img src={photo} alt="Captured proof" className="w-full rounded-xl border border-slate-300" />
+                  <button
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className="absolute bottom-2 right-2 bg-zinc-950/80 border border-zinc-700 rounded-full p-2 text-white"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-400 rounded-xl py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
+                >
+                  <Camera size={22} />
+                  <span className="text-xs">Tap to capture photo</span>
+                </button>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => fileInputRef.current && fileInputRef.current.click()}
-              className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-300 rounded-xl py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white shadow-sm"
-            >
-              <Camera size={22} />
-              <span className="text-xs">Tap to capture photo</span>
-            </button>
-          )}
-        </div>
 
-        <div className="space-y-3 mb-6">
-          {CATEGORIES.slice(2).map(renderCategoryCard)}
-        </div>
+            {renderField("solution", "Fix applied", "What did you do about it, if anything?")}
+
+            {/* Step 3: current status */}
+            <div className="mb-5">
+              <label className="text-xs font-medium text-slate-700 block mb-1.5">Is it fixed?</label>
+              <div className="flex flex-col gap-2">
+                {FIX_STATUS_OPTIONS.map((opt) =>
+                  renderRadioOption(opt.id, opt.label, fixStatus === opt.id, setFixStatus)
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Final step: always asked, regardless of the path above */}
+        {renderField("followUp", "Follow-up for next shift", "What should the next shift watch or continue?")}
 
         {AI_CLEANUP_ENABLED && (
           <>
@@ -287,7 +402,7 @@ export default function ShiftReportForm() {
               {rawFields && (
                 <button
                   onClick={undoCleanup}
-                  className="bg-white border border-slate-200 text-slate-500 text-sm px-4 rounded-xl shadow-sm"
+                  className="bg-white border border-slate-300 text-slate-500 text-sm px-4 rounded-xl"
                 >
                   Undo
                 </button>
@@ -304,7 +419,7 @@ export default function ShiftReportForm() {
           disabled={!canSubmit}
           className={
             canSubmit
-              ? "w-full bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl py-3 mt-2 shadow-sm"
+              ? "w-full bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl py-3 mt-2"
               : "w-full bg-slate-200 text-slate-400 font-medium rounded-xl py-3 cursor-not-allowed mt-2"
           }
         >
