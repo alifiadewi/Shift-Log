@@ -206,7 +206,7 @@ export default function ShiftReportForm() {
             onChange={(e) => updateField(key, e.target.value)}
             placeholder={placeholder}
             rows={2}
-            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 pr-11 text-sm outline-none focus:border-blue-500 resize-none"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 pr-11 text-sm outline-none focus:border-blue-500 resize-none"
           />
           {speechSupported && (
             <button
@@ -236,8 +236,8 @@ export default function ShiftReportForm() {
         onClick={() => onSelect(id)}
         className={
           selected
-            ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-lg px-4 py-3 text-left bg-white"
-            : "w-full flex items-center gap-3 border border-slate-300 rounded-lg px-4 py-3 text-left bg-white hover:border-slate-400"
+            ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-md px-4 py-3 text-left bg-white"
+            : "w-full flex items-center gap-3 border border-slate-300 rounded-md px-4 py-3 text-left bg-white hover:border-slate-400"
         }
       >
         <span
@@ -265,8 +265,8 @@ export default function ShiftReportForm() {
         onClick={onToggle}
         className={
           checked
-            ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-lg px-4 py-3 text-left bg-white"
-            : "w-full flex items-center gap-3 border border-slate-300 rounded-lg px-4 py-3 text-left bg-white hover:border-slate-400"
+            ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-md px-4 py-3 text-left bg-white"
+            : "w-full flex items-center gap-3 border border-slate-300 rounded-md px-4 py-3 text-left bg-white hover:border-slate-400"
         }
       >
         <span
@@ -289,7 +289,7 @@ export default function ShiftReportForm() {
     const severityLabel = SEVERITY_OPTIONS.find((o) => o.id === submitted.severity)?.label;
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white border border-slate-300 rounded-xl p-6">
+        <div className="w-full max-w-md bg-white border border-slate-300 rounded-lg p-6">
           <div className="flex items-center gap-2 text-emerald-600 mb-4">
             <CheckCircle2 size={22} />
             <span className="font-medium">Report ready</span>
@@ -298,7 +298,7 @@ export default function ShiftReportForm() {
             There's no server yet, so nothing was actually sent. This is exactly what would go to the
             backend once it exists.
           </p>
-          <div className="bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-700 space-y-2 max-h-72 overflow-auto">
+          <div className="bg-slate-50 border border-slate-300 rounded-md p-3 text-xs text-slate-700 space-y-2 max-h-72 overflow-auto">
             <div><span className="text-slate-500">Name:</span> {submitted.name}</div>
             <div><span className="text-slate-500">Shift:</span> {submitted.shift}</div>
             <div><span className="text-slate-500">Time:</span> {submitted.submittedAt}</div>
@@ -321,11 +321,11 @@ export default function ShiftReportForm() {
             </div>
           </div>
           {submitted.photo && (
-            <img src={submitted.photo} alt="Report proof" className="w-full rounded-lg mt-3 border border-slate-300" />
+            <img src={submitted.photo} alt="Report proof" className="w-full rounded-md mt-3 border border-slate-300" />
           )}
           <button
             onClick={handleNewReport}
-            className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg py-2.5"
+            className="w-full mt-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-md py-2.5"
           >
             Start a new report
           </button>
@@ -341,13 +341,13 @@ export default function ShiftReportForm() {
         <p className="text-xs text-slate-500 mb-4">Fill in what applies. Location, category, and severity are required.</p>
 
         {!VOICE_INPUT_ENABLED && (
-          <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-lg p-3 mb-4 text-xs text-slate-500">
+          <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-md p-3 mb-4 text-xs text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>Voice input is temporarily off, please type instead.</span>
           </div>
         )}
         {VOICE_INPUT_ENABLED && !speechSupported && (
-          <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-lg p-3 mb-4 text-xs text-slate-500">
+          <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-md p-3 mb-4 text-xs text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>Voice input isn't supported in this browser — typing still works for every field.</span>
           </div>
@@ -361,7 +361,7 @@ export default function ShiftReportForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Ahmad Fauzi"
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
             />
           </div>
           <div>
@@ -369,7 +369,7 @@ export default function ShiftReportForm() {
             <select
               value={shift}
               onChange={(e) => setShift(e.target.value)}
-              className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
             >
               {SHIFTS.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -384,7 +384,7 @@ export default function ShiftReportForm() {
           <select
             value={moduleLocation}
             onChange={(e) => setModuleLocation(e.target.value)}
-            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
           >
             <option value="" disabled>Select location / module</option>
             {MODULE_OPTIONS.map((m) => (
@@ -399,7 +399,7 @@ export default function ShiftReportForm() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
           >
             <option value="" disabled>Select category</option>
             {CATEGORY_OPTIONS.map((c) => (
@@ -411,7 +411,7 @@ export default function ShiftReportForm() {
               value={customCategory}
               onChange={(e) => setCustomCategory(e.target.value)}
               placeholder="Type the issue category"
-              className="w-full mt-2 bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+              className="w-full mt-2 bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
             />
           )}
         </div>
@@ -433,7 +433,7 @@ export default function ShiftReportForm() {
             value={hmiCode}
             onChange={(e) => setHmiCode(e.target.value)}
             placeholder="e.g. E204 (leave blank if none shown)"
-            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+            className="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
           />
         </div>
 
@@ -449,7 +449,7 @@ export default function ShiftReportForm() {
             value={actionOther}
             onChange={(e) => setActionOther(e.target.value)}
             placeholder="Other action (optional)"
-            className="w-full mt-2 bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+            className="w-full mt-2 bg-white border border-slate-300 rounded-md px-3 py-2.5 text-sm outline-none focus:border-blue-500"
           />
         </div>
 
@@ -466,7 +466,7 @@ export default function ShiftReportForm() {
           />
           {photo ? (
             <div className="relative">
-              <img src={photo} alt="Captured proof" className="w-full rounded-lg border border-slate-300" />
+              <img src={photo} alt="Captured proof" className="w-full rounded-md border border-slate-300" />
               <button
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
                 className="absolute bottom-2 right-2 bg-zinc-950/80 border border-zinc-700 rounded-full p-2 text-white"
@@ -477,7 +477,7 @@ export default function ShiftReportForm() {
           ) : (
             <button
               onClick={() => fileInputRef.current && fileInputRef.current.click()}
-              className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-400 rounded-lg py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
+              className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-400 rounded-md py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
             >
               <Camera size={22} />
               <span className="text-xs">Tap to capture photo</span>
@@ -499,14 +499,14 @@ export default function ShiftReportForm() {
               <button
                 onClick={cleanUpWithAI}
                 disabled={isCleaning || !Object.values(fields).some((v) => v.trim())}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 text-sm font-medium rounded-lg py-2.5"
+                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-900 text-sm font-medium rounded-md py-2.5"
               >
                 {isCleaning ? "Cleaning up..." : "Clean up with AI"}
               </button>
               {rawFields && (
                 <button
                   onClick={undoCleanup}
-                  className="bg-white border border-slate-300 text-slate-500 text-sm px-4 rounded-lg"
+                  className="bg-white border border-slate-300 text-slate-500 text-sm px-4 rounded-md"
                 >
                   Undo
                 </button>
@@ -523,8 +523,8 @@ export default function ShiftReportForm() {
           disabled={!canSubmit}
           className={
             canSubmit
-              ? "w-full bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg py-3 mt-2"
-              : "w-full bg-slate-200 text-slate-400 font-medium rounded-lg py-3 cursor-not-allowed mt-2"
+              ? "w-full bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-md py-3 mt-2"
+              : "w-full bg-slate-200 text-slate-400 font-medium rounded-md py-3 cursor-not-allowed mt-2"
           }
         >
           Review report
