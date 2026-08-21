@@ -299,8 +299,7 @@ export default function ShiftReportForm() {
             <span className="font-medium">Report ready</span>
           </div>
           <p className="text-sm text-slate-500 mb-4">
-            There's no server yet, so nothing was actually sent. This is exactly what would go to the
-            backend once it exists.
+            There's no server yet, so nothing was actually sent.
           </p>
           <div className="bg-white border border-slate-800 rounded-md p-3 text-xs text-slate-700 space-y-2 max-h-72 overflow-auto">
             <div><span className="text-slate-500">Name:</span> {submitted.name}</div>
@@ -342,7 +341,7 @@ export default function ShiftReportForm() {
     <div className="min-h-screen bg-white text-slate-900 p-4">
       <div className="max-w-md mx-auto">
         <h1 className="text-lg font-semibold mb-1">Shift Report</h1>
-        <p className="text-xs text-slate-500 mb-4">Fill in what applies. Location, category, and severity are required.</p>
+        <p className="text-xs text-slate-500 mb-4">Name, Location, category, and severity are required.</p>
 
         {!VOICE_INPUT_ENABLED && (
           <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-xs text-blue-700">
