@@ -343,7 +343,7 @@ export default function ShiftReportForm() {
         {!VOICE_INPUT_ENABLED && (
           <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-xl p-3 mb-4 text-xs text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
-            <span>Voice input is temporarily off pending IT review — please type instead.</span>
+            <span>Voice input is temporarily off, please type instead.</span>
           </div>
         )}
         {VOICE_INPUT_ENABLED && !speechSupported && (
@@ -432,7 +432,7 @@ export default function ShiftReportForm() {
           <input
             value={hmiCode}
             onChange={(e) => setHmiCode(e.target.value)}
-            placeholder="e.g. E204 — leave blank if none shown"
+            placeholder="e.g. E204 (leave blank if none shown)"
             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
           />
         </div>
@@ -490,7 +490,7 @@ export default function ShiftReportForm() {
           "description",
           "Brief description",
           "Anything else worth noting?",
-          "Keep it short — a sentence or two, just what the fields above didn't cover."
+          "Keep it short what the fields above didn't cover."
         )}
 
         {AI_CLEANUP_ENABLED && (
