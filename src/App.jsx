@@ -1,16 +1,51 @@
 import React, { useState, useRef } from "react";
-import { Camera, Mic, Square, RotateCcw, CheckCircle2, Info } from "lucide-react";
+import { Camera, Mic, Square, RotateCcw, Check, CheckCircle2, Info } from "lucide-react";
+
+// LIST DI SINI KALO MAU DITAMBAH/EDIT
 
 const SHIFTS = ["Morning", "Afternoon", "Night"];
 
-const FIX_STATUS_OPTIONS = [
-  { id: "not_fixed", label: "Not fixed" },
-  { id: "maintenance", label: "Under maintenance" },
-  { id: "fixed", label: "Fixed" },
+const MODULE_OPTIONS = [
+  "Wembley (Module A)",
+  "Wembley (Module B)",
+  "Wembley (Module C)",
+  "Wembley (Module D)",
+  "Wembley (Module E)",
+  "Wembley (Module F)",
+  "Main Assy (Module 1)",
+  "Main Assy (Module 2)",
+  "Main Assy (Module 3)",
+  "Main Assy (Module 4)",
 ];
 
-// PENDING
-// Mic input sends raw audio to Google/Apple's speech service; AI cleanup sends text to Anthropic.
+// OTHER_CATEGORY STAY IN TEXT, LAINNYA DROPDOWN
+const OTHER_CATEGORY = "Lainnya";
+const CATEGORY_OPTIONS = [
+  "Mechanical Jam",
+  "Electrical/Power",
+  "Software/HMI Error",
+  "Material Defect",
+  "Strange Noise/Smell",
+  "PSC Reject",
+  "Hotbar Reject",
+  OTHER_CATEGORY,
+];
+
+const SEVERITY_OPTIONS = [
+  { id: "line_stopped", label: "Line stopped" },
+  { id: "slow", label: "Running slow / bottleneck" },
+  { id: "cosmetic", label: "Cosmetic / running normally" },
+];
+
+const ACTION_OPTIONS = [
+  "Cleared jammed material",
+  "Power cycled / reset HMI",
+  "Reloaded",
+  "Resoldering",
+  "No action taken",
+];
+
+// PENDING MICNYA CONNECT GOOGLE/APPLE'S SPEECH RECOG, LLM CONNECT ANTHROPIC
 const VOICE_INPUT_ENABLED = false;
 const AI_CLEANUP_ENABLED = false;
 
@@ -19,10 +54,15 @@ const CLEANUP_ENDPOINT = "/api/cleanup";
 export default function ShiftReportForm() {
   const [name, setName] = useState("");
   const [shift, setShift] = useState("Morning");
-  const [fields, setFields] = useState({ workDone: "", problem: "", solution: "", followUp: "" });
-  const [hasProblem, setHasProblem] = useState(null); // null | true | false
-  const [fixStatus, setFixStatus] = useState(null); // null | "not_fixed" | "maintenance" | "fixed"
+  const [moduleLocation, setModuleLocation] = useState(""); // required
+  const [category, setCategory] = useState(""); // required
+  const [customCategory, setCustomCategory] = useState(""); // used for OTHER_CATEGORY
+  const [severity, setSeverity] = useState(null); // required SEVERITY_OPTIONS
+  const [hmiCode, setHmiCode] = useState("");
+  const [actionsTaken, setActionsTaken] = useState([]); // array ACTION_OPTIONS
+  const [actionOther, setActionOther] = useState("");
   const [photo, setPhoto] = useState(null);
+  const [fields, setFields] = useState({ description: "" }); // kept as an object for AI cleanup
   const [recordingKey, setRecordingKey] = useState(null);
   const [submitted, setSubmitted] = useState(null);
   const [rawFields, setRawFields] = useState(null);
@@ -46,6 +86,12 @@ export default function ShiftReportForm() {
 
   function updateField(key, value) {
     setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  function toggleAction(action) {
+    setActionsTaken((prev) =>
+      prev.includes(action) ? prev.filter((a) => a !== action) : [...prev, action]
+    );
   }
 
   function toggleRecording(key) {
@@ -110,50 +156,50 @@ export default function ShiftReportForm() {
     }
   }
 
-  function handleSetHasProblem(value) {
-    setHasProblem(value);
-    if (!value) {
-      setFixStatus(null);
-      setPhoto(null);
-      setFields((f) => ({ ...f, problem: "", solution: "" }));
-    }
-  }
-
-  const problemStepOk =
-    hasProblem === false ||
-    (hasProblem === true &&
-      fields.problem.trim() &&
-      !!photo &&
-      fixStatus !== null &&
-      (fixStatus !== "fixed" || fields.solution.trim()));
-
-  const canSubmit =
-    name.trim() &&
-    fields.workDone.trim() &&
-    hasProblem !== null &&
-    problemStepOk &&
-    fields.followUp.trim();
+  // REQUIRED-FIELD
+  // ADD `&&` AJA KALAU MAU NAMBAH REQ
+  const categoryFilled = category && (category !== OTHER_CATEGORY || customCategory.trim());
+  const canSubmit = name.trim() && moduleLocation && categoryFilled && !!severity;
 
   function handleSubmit() {
     if (!canSubmit) return;
-    setSubmitted({ name, shift, photo, fields, hasProblem, fixStatus, submittedAt: new Date().toISOString() });
+    setSubmitted({
+      name,
+      shift,
+      moduleLocation,
+      category: category === OTHER_CATEGORY ? customCategory.trim() : category,
+      severity,
+      hmiCode,
+      actionsTaken,
+      actionOther,
+      photo,
+      description: fields.description,
+      submittedAt: new Date().toISOString(),
+    });
   }
 
   function handleNewReport() {
     setSubmitted(null);
     setName("");
+    setModuleLocation("");
+    setCategory("");
+    setCustomCategory("");
+    setSeverity(null);
+    setHmiCode("");
+    setActionsTaken([]);
+    setActionOther("");
     setPhoto(null);
-    setFields({ workDone: "", problem: "", solution: "", followUp: "" });
-    setHasProblem(null);
-    setFixStatus(null);
+    setFields({ description: "" });
     setCleanupError(null);
     setRawFields(null);
   }
 
-  function renderField(key, label, placeholder) {
+  // PELABELAN SAMA KOLOM TEXT DAN MIC BUTTON
+  function renderField(key, label, placeholder, hint) {
     return (
       <div className="mb-5">
-        <label className="text-xs font-medium text-slate-700 mb-1.5 block">{label}</label>
+        <label className="text-xs font-medium text-slate-700 mb-1 block">{label}</label>
+        {hint && <p className="text-xs text-slate-400 mb-1.5">{hint}</p>}
         <div className="relative">
           <textarea
             value={fields[key]}
@@ -180,36 +226,8 @@ export default function ShiftReportForm() {
     );
   }
 
-  // Yes/No pair for "was there a problem"
-  function renderYesNo(selected, onSelect) {
-    return (
-      <div className="flex gap-2 mt-1.5">
-        <button
-          type="button"
-          onClick={() => onSelect(true)}
-          className={
-            selected === true
-              ? "flex-1 border-2 border-blue-600 bg-blue-50 text-blue-700 text-sm font-medium rounded-xl py-2"
-              : "flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-xl py-2 hover:border-slate-400"
-          }
-        >
-          Yes
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelect(false)}
-          className={
-            selected === false
-              ? "flex-1 border-2 border-blue-600 bg-blue-50 text-blue-700 text-sm font-medium rounded-xl py-2"
-              : "flex-1 border border-slate-300 text-slate-600 text-sm font-medium rounded-xl py-2 hover:border-slate-400"
-          }
-        >
-          No
-        </button>
-      </div>
-    );
-  }
-
+  // RADIO-CARD PICKER, CUMA PILIH SATU
+  // ID=STORED, LABEL=SHOWN
   function renderRadioOption(id, label, selected, onSelect) {
     return (
       <button
@@ -238,8 +256,37 @@ export default function ShiftReportForm() {
     );
   }
 
+  // CHECKBOX PICKER, MULTISELECT
+  function renderCheckboxOption(label, checked, onToggle) {
+    return (
+      <button
+        key={label}
+        type="button"
+        onClick={onToggle}
+        className={
+          checked
+            ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-xl px-4 py-3 text-left bg-white"
+            : "w-full flex items-center gap-3 border border-slate-300 rounded-xl px-4 py-3 text-left bg-white hover:border-slate-400"
+        }
+      >
+        <span
+          className={
+            checked
+              ? "flex items-center justify-center w-5 h-5 rounded-md border-2 border-blue-600 bg-blue-600 shrink-0"
+              : "flex items-center justify-center w-5 h-5 rounded-md border-2 border-slate-300 shrink-0"
+          }
+        >
+          {checked && <Check size={13} className="text-white" />}
+        </span>
+        <span className={checked ? "text-sm font-medium text-slate-900" : "text-sm text-slate-600"}>
+          {label}
+        </span>
+      </button>
+    );
+  }
+
   if (submitted) {
-    const statusLabel = FIX_STATUS_OPTIONS.find((o) => o.id === submitted.fixStatus)?.label;
+    const severityLabel = SEVERITY_OPTIONS.find((o) => o.id === submitted.severity)?.label;
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-white border border-slate-300 rounded-2xl p-6">
@@ -248,27 +295,30 @@ export default function ShiftReportForm() {
             <span className="font-medium">Report ready</span>
           </div>
           <p className="text-sm text-slate-500 mb-4">
-            There's no server yet.
+            There's no server yet, so nothing was actually sent. This is exactly what would go to the
+            backend once it exists.
           </p>
           <div className="bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-700 space-y-2 max-h-72 overflow-auto">
             <div><span className="text-slate-500">Name:</span> {submitted.name}</div>
             <div><span className="text-slate-500">Shift:</span> {submitted.shift}</div>
             <div><span className="text-slate-500">Time:</span> {submitted.submittedAt}</div>
-            <div><span className="text-slate-500">Work done:</span> {submitted.fields.workDone}</div>
+            <div><span className="text-slate-500">Location/Module:</span> {submitted.moduleLocation}</div>
+            <div><span className="text-slate-500">Category:</span> {submitted.category}</div>
+            <div><span className="text-slate-500">Severity:</span> {severityLabel}</div>
             <div>
-              <span className="text-slate-500">Problem:</span>{" "}
-              {submitted.hasProblem ? submitted.fields.problem : <em className="text-slate-400">None reported</em>}
+              <span className="text-slate-500">HMI code:</span>{" "}
+              {submitted.hmiCode || <em className="text-slate-400">none</em>}
             </div>
-            {submitted.hasProblem && (
-              <>
-                <div>
-                  <span className="text-slate-500">Fix applied:</span>{" "}
-                  {submitted.fields.solution || <em className="text-slate-400">None entered</em>}
-                </div>
-                <div><span className="text-slate-500">Status:</span> {statusLabel}</div>
-              </>
-            )}
-            <div><span className="text-slate-500">Follow-up:</span> {submitted.fields.followUp}</div>
+            <div>
+              <span className="text-slate-500">Action taken:</span>{" "}
+              {[...submitted.actionsTaken, submitted.actionOther].filter(Boolean).join(", ") || (
+                <em className="text-slate-400">none logged</em>
+              )}
+            </div>
+            <div>
+              <span className="text-slate-500">Description:</span>{" "}
+              {submitted.description || <em className="text-slate-400">empty</em>}
+            </div>
           </div>
           {submitted.photo && (
             <img src={submitted.photo} alt="Report proof" className="w-full rounded-xl mt-3 border border-slate-300" />
@@ -288,12 +338,12 @@ export default function ShiftReportForm() {
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4">
       <div className="max-w-md mx-auto">
         <h1 className="text-lg font-semibold mb-1">Shift Report</h1>
-        <p className="text-xs text-slate-500 mb-4">Answer each step. You can edit before submitting.</p>
+        <p className="text-xs text-slate-500 mb-4">Fill in what applies. Location, category, and severity are required.</p>
 
         {!VOICE_INPUT_ENABLED && (
           <div className="flex items-start gap-2 bg-white border border-slate-300 rounded-xl p-3 mb-4 text-xs text-slate-500">
             <Info size={14} className="mt-0.5 shrink-0" />
-            <span>Voice input is temporarily off, please type instead.</span>
+            <span>Voice input is temporarily off pending IT review — please type instead.</span>
           </div>
         )}
         {VOICE_INPUT_ENABLED && !speechSupported && (
@@ -328,66 +378,120 @@ export default function ShiftReportForm() {
           </div>
         </div>
 
-        {/* Step 1: what did you do */}
-        {renderField("workDone", "What did you do this shift?", "What did you do or change?")}
-
-        {/* Step 2: was there a problem */}
+        {/* Location / Module is required */}
         <div className="mb-5">
-          <label className="text-xs font-medium text-slate-700 block">Was there a problem?</label>
-          {renderYesNo(hasProblem, handleSetHasProblem)}
+          <label className="text-xs text-slate-500 mb-1 block">Location / Module *</label>
+          <select
+            value={moduleLocation}
+            onChange={(e) => setModuleLocation(e.target.value)}
+            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+          >
+            <option value="" disabled>Select location / module</option>
+            {MODULE_OPTIONS.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
         </div>
 
-        {hasProblem === true && (
-          <>
-            {renderField("problem", "Describe the problem", "What went wrong?")}
+        {/* Issue category is required */}
+        <div className="mb-5">
+          <label className="text-xs text-slate-500 mb-1 block">Issue category *</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+          >
+            <option value="" disabled>Select category</option>
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {category === OTHER_CATEGORY && (
+            <input
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="Type the issue category"
+              className="w-full mt-2 bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+            />
+          )}
+        </div>
 
-            <div className="mb-5">
-              <label className="text-xs text-slate-500 mb-1 block">Photo evidence</label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoChange}
-                className="hidden"
-              />
-              {photo ? (
-                <div className="relative">
-                  <img src={photo} alt="Captured proof" className="w-full rounded-xl border border-slate-300" />
-                  <button
-                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                    className="absolute bottom-2 right-2 bg-zinc-950/80 border border-zinc-700 rounded-full p-2 text-white"
-                  >
-                    <RotateCcw size={16} />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-400 rounded-xl py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
-                >
-                  <Camera size={22} />
-                  <span className="text-xs">Tap to capture photo</span>
-                </button>
-              )}
+        {/* Severity / line impact is required */}
+        <div className="mb-5">
+          <label className="text-xs font-medium text-slate-700 block mb-1.5">Severity / line impact *</label>
+          <div className="flex flex-col gap-2">
+            {SEVERITY_OPTIONS.map((opt) =>
+              renderRadioOption(opt.id, opt.label, severity === opt.id, setSeverity)
+            )}
+          </div>
+        </div>
+
+        {/* HMI error code — optional */}
+        <div className="mb-5">
+          <label className="text-xs text-slate-500 mb-1 block">HMI error code (if shown)</label>
+          <input
+            value={hmiCode}
+            onChange={(e) => setHmiCode(e.target.value)}
+            placeholder="e.g. E204 — leave blank if none shown"
+            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+          />
+        </div>
+
+        {/* Action taken is optional, multi-select + free text */}
+        <div className="mb-5">
+          <label className="text-xs font-medium text-slate-700 block mb-1.5">Action taken</label>
+          <div className="flex flex-col gap-2">
+            {ACTION_OPTIONS.map((a) =>
+              renderCheckboxOption(a, actionsTaken.includes(a), () => toggleAction(a))
+            )}
+          </div>
+          <input
+            value={actionOther}
+            onChange={(e) => setActionOther(e.target.value)}
+            placeholder="Other action (optional)"
+            className="w-full mt-2 bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500"
+          />
+        </div>
+
+        {/* Visual proof is optional */}
+        <div className="mb-5">
+          <label className="text-xs text-slate-500 mb-1 block">Visual proof</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          {photo ? (
+            <div className="relative">
+              <img src={photo} alt="Captured proof" className="w-full rounded-xl border border-slate-300" />
+              <button
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                className="absolute bottom-2 right-2 bg-zinc-950/80 border border-zinc-700 rounded-full p-2 text-white"
+              >
+                <RotateCcw size={16} />
+              </button>
             </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-400 rounded-xl py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
+            >
+              <Camera size={22} />
+              <span className="text-xs">Tap to capture photo</span>
+            </button>
+          )}
+        </div>
 
-            {renderField("solution", "Fix applied", "What did you do about it, if anything?")}
-
-            {/* Step 3: current status */}
-            <div className="mb-5">
-              <label className="text-xs font-medium text-slate-700 block mb-1.5">Is it fixed?</label>
-              <div className="flex flex-col gap-2">
-                {FIX_STATUS_OPTIONS.map((opt) =>
-                  renderRadioOption(opt.id, opt.label, fixStatus === opt.id, setFixStatus)
-                )}
-              </div>
-            </div>
-          </>
+        {/* Brief description is optional */}
+        {renderField(
+          "description",
+          "Brief description",
+          "Anything else worth noting?",
+          "Keep it short — a sentence or two, just what the fields above didn't cover."
         )}
-
-        {/* Final step: always asked, regardless of the path above */}
-        {renderField("followUp", "Follow-up for next shift", "What should the next shift watch or continue?")}
 
         {AI_CLEANUP_ENABLED && (
           <>
