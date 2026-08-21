@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import { Camera, Mic, Square, RotateCcw, Check, CheckCircle2, Info } from "lucide-react";
 
 // LIST DI SINI KALO MAU DITAMBAH/EDIT
-
 const SHIFTS = ["Morning", "Afternoon", "Night"];
 
 const MODULE_OPTIONS = [
@@ -194,11 +193,16 @@ export default function ShiftReportForm() {
     setRawFields(null);
   }
 
+  // RED ASTERISK, DIPAKE DI LABEL YANG REQUIRED
+  function Required() {
+    return <span className="text-red-600">*</span>;
+  }
+
   // PELABELAN SAMA KOLOM TEXT DAN MIC BUTTON
   function renderField(key, label, placeholder, hint) {
     return (
       <div className="mb-5">
-        <label className="text-xs font-medium text-slate-700 mb-1 block">{label}</label>
+        <label className="text-xs font-medium text-slate-900 mb-1 block">{label}</label>
         {hint && <p className="text-xs text-slate-400 mb-1.5">{hint}</p>}
         <div className="relative">
           <textarea
@@ -237,7 +241,7 @@ export default function ShiftReportForm() {
         className={
           selected
             ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-md px-4 py-3 text-left bg-white"
-            : "w-full flex items-center gap-3 border border-slate-800 rounded-md px-4 py-3 text-left bg-white hover:border-slate-black"
+            : "w-full flex items-center gap-3 border border-slate-800 rounded-md px-4 py-3 text-left bg-white hover:border-black"
         }
       >
         <span
@@ -266,7 +270,7 @@ export default function ShiftReportForm() {
         className={
           checked
             ? "w-full flex items-center gap-3 border-2 border-blue-600 rounded-md px-4 py-3 text-left bg-white"
-            : "w-full flex items-center gap-3 border border-slate-800 rounded-md px-4 py-3 text-left bg-white hover:border-slate-black"
+            : "w-full flex items-center gap-3 border border-slate-800 rounded-md px-4 py-3 text-left bg-white hover:border-black"
         }
       >
         <span
@@ -341,13 +345,13 @@ export default function ShiftReportForm() {
         <p className="text-xs text-slate-500 mb-4">Fill in what applies. Location, category, and severity are required.</p>
 
         {!VOICE_INPUT_ENABLED && (
-          <div className="flex items-start gap-2 bg-white border border-slate-800 rounded-md p-3 mb-4 text-xs text-slate-500">
+          <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-xs text-blue-700">
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>Voice input is temporarily off, please type instead.</span>
           </div>
         )}
         {VOICE_INPUT_ENABLED && !speechSupported && (
-          <div className="flex items-start gap-2 bg-white border border-slate-800 rounded-md p-3 mb-4 text-xs text-slate-500">
+          <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-xs text-blue-700">
             <Info size={14} className="mt-0.5 shrink-0" />
             <span>Voice input isn't supported in this browser — typing still works for every field.</span>
           </div>
@@ -356,7 +360,9 @@ export default function ShiftReportForm() {
         {/* Name + Shift */}
         <div className="grid grid-cols-2 gap-3 mb-5">
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Your name</label>
+            <label className="text-xs font-medium text-slate-900 mb-1 block">
+              Your name <Required />
+            </label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -365,7 +371,7 @@ export default function ShiftReportForm() {
             />
           </div>
           <div>
-            <label className="text-xs text-slate-500 mb-1 block">Shift</label>
+            <label className="text-xs font-medium text-slate-900 mb-1 block">Shift</label>
             <select
               value={shift}
               onChange={(e) => setShift(e.target.value)}
@@ -380,7 +386,9 @@ export default function ShiftReportForm() {
 
         {/* Location / Module is required */}
         <div className="mb-5">
-          <label className="text-xs text-slate-500 mb-1 block">Location / Module *</label>
+          <label className="text-xs font-medium text-slate-900 mb-1 block">
+            Location / Module <Required />
+          </label>
           <select
             value={moduleLocation}
             onChange={(e) => setModuleLocation(e.target.value)}
@@ -395,7 +403,9 @@ export default function ShiftReportForm() {
 
         {/* Issue category is required */}
         <div className="mb-5">
-          <label className="text-xs text-slate-500 mb-1 block">Issue category *</label>
+          <label className="text-xs font-medium text-slate-900 mb-1 block">
+            Issue category <Required />
+          </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -418,7 +428,9 @@ export default function ShiftReportForm() {
 
         {/* Severity / line impact is required */}
         <div className="mb-5">
-          <label className="text-xs font-medium text-slate-700 block mb-1.5">Severity / line impact *</label>
+          <label className="text-xs font-medium text-slate-900 block mb-1.5">
+            Severity / line impact <Required />
+          </label>
           <div className="flex flex-col gap-2">
             {SEVERITY_OPTIONS.map((opt) =>
               renderRadioOption(opt.id, opt.label, severity === opt.id, setSeverity)
@@ -428,7 +440,7 @@ export default function ShiftReportForm() {
 
         {/* HMI error code — optional */}
         <div className="mb-5">
-          <label className="text-xs text-slate-500 mb-1 block">HMI error code (if shown)</label>
+          <label className="text-xs font-medium text-slate-900 mb-1 block">HMI error code (if shown)</label>
           <input
             value={hmiCode}
             onChange={(e) => setHmiCode(e.target.value)}
@@ -439,7 +451,7 @@ export default function ShiftReportForm() {
 
         {/* Action taken is optional, multi-select + free text */}
         <div className="mb-5">
-          <label className="text-xs font-medium text-slate-700 block mb-1.5">Action taken</label>
+          <label className="text-xs font-medium text-slate-900 block mb-1.5">Action taken</label>
           <div className="flex flex-col gap-2">
             {ACTION_OPTIONS.map((a) =>
               renderCheckboxOption(a, actionsTaken.includes(a), () => toggleAction(a))
@@ -455,7 +467,7 @@ export default function ShiftReportForm() {
 
         {/* Visual proof is optional */}
         <div className="mb-5">
-          <label className="text-xs text-slate-500 mb-1 block">Visual proof</label>
+          <label className="text-xs font-medium text-slate-900 mb-1 block">Visual proof</label>
           <input
             ref={fileInputRef}
             type="file"
@@ -477,7 +489,7 @@ export default function ShiftReportForm() {
           ) : (
             <button
               onClick={() => fileInputRef.current && fileInputRef.current.click()}
-              className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-slate-black rounded-md py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
+              className="w-full flex flex-col items-center justify-center gap-2 border border-dashed border-black rounded-md py-8 text-slate-500 hover:border-blue-500 hover:text-blue-600 bg-white"
             >
               <Camera size={22} />
               <span className="text-xs">Tap to capture photo</span>
